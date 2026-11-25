@@ -1,0 +1,45 @@
+name: Herd report detection
+description: Reports a detection about a person to Herd, which scores it and assigns the training your Herd alert mappings name.
+trigger:
+  name: On demand
+  type: On demand
+  next: report_to_herd
+  parameters:
+    type: object
+    properties:
+      organization_id:
+        type: string
+        description: Your Herd organization ID (last segment of the webhook URL in Herd Settings)
+      user_email:
+        type: string
+        description: Email address of the person the detection is about
+      alert_type:
+        type: string
+        description: Detection name or rule; must match an alert-to-training mapping in Herd
+      severity:
+        type: string
+        description: low, medium, high or critical
+      description:
+        type: string
+        description: Short summary of the detection
+      detection_id:
+        type: string
+        description: Stable Falcon detection or alert id, so retries do not repeat training
+    required:
+      - organization_id
+      - user_email
+      - alert_type
+      - severity
+      - description
+actions:
+  report_to_herd:
+    id: api_integrations.Herd report detection.reportHerdDetection
+    properties:
+      organizationId: ${data['organization_id']}
+      alertType: ${data['alert_type']}
+      userEmail: ${data['user_email']}
+      severity: ${data['severity']}
+      description: ${data['description']}
+      source: crowdstrike
+      eventId: ${data['detection_id']}
+output_fields: []

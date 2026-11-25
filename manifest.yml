@@ -1,0 +1,50 @@
+name: Herd Security
+description: Look up a person's Herd risk score and training status from Falcon Fusion workflows, and report detections to Herd so it assigns corrective training.
+logo: images/logo.png
+vendor: Herd Security
+vendor_products:
+  - Herd
+use_case: Security awareness
+manifest_version: "2023-05-09"
+ignored:
+  - node_modules
+  - node_modules/.+
+  - scripts
+  - scripts/.+
+ui:
+  homepage: ""
+  extensions: []
+  pages: {}
+  dashboards: {}
+  navigation: {}
+api_integrations:
+  - name: Herd look up user
+    description: Herd risk score and training status by email
+    path: api-integrations/herd-api.yml
+  - name: Herd report detection
+    description: Report a detection about a person to Herd
+    path: api-integrations/herd-detection-webhook.yml
+rtr_scripts: []
+collections: []
+auth:
+  scopes: []
+  permissions: {}
+  roles: []
+functions: []
+workflows:
+  - name: Herd look up user risk
+    path: workflows/herd-look-up-user-risk.yml
+    permissions: []
+  - name: Herd report detection
+    path: workflows/herd-report-detection.yml
+    permissions: []
+  - name: Herd check risk then report
+    path: workflows/herd-check-risk-then-report.yml
+    permissions: []
+parsers: []
+logscale:
+  saved_searches: []
+lookup_files: []
+docs:
+  path: app_docs
+  entrypoint: README.md

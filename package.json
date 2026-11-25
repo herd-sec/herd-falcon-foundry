@@ -1,0 +1,13 @@
+{
+  "name": "herd-falcon-foundry",
+  "private": true,
+  "description": "Falcon Foundry app for Herd Security: offline checks only, the app itself is manifest.yml and its folders",
+  "type": "module",
+  "scripts": {
+    "validate": "bun scripts/validate.ts"
+  },
+  "devDependencies": {
+    "@apidevtools/swagger-parser": "^13.1.0",
+    "yaml": "^2.9.1"
+  }
+}

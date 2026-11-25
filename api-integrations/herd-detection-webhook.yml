@@ -1,0 +1,119 @@
+openapi: 3.0.0
+info:
+  title: Herd Security detection webhook
+  version: 1.0.0
+  description: |
+    Reports a detection about a person to Herd. Herd matches the email to a
+    user, scores the alert if you have mapped its alert type, and assigns the
+    training your alert-to-training mappings name.
+
+    Setup: in Herd, open Settings > SIEM / DLP webhooks. Copy your organization
+    ID from the webhook URL (the last path segment) and the webhook secret, and
+    paste the secret into the bearer token field when you install this app. Add
+    an alert-to-training mapping for each alert type you send, or Herd stores
+    the alert without scoring it or assigning training.
+servers:
+  - url: https://api.herdsecurity.io
+security:
+  - HerdWebhookSecret: []
+paths:
+  /api/webhooks/siem/{organizationId}:
+    post:
+      operationId: reportHerdDetection
+      summary: Report a detection about a person
+      description: >-
+        One alert per request. Repeated deliveries with the same source and
+        eventId are ingested once.
+      x-cs-operation-config:
+        workflow:
+          name: Herd report detection
+          description: Tell Herd a person triggered a detection so it can score it and assign mapped training
+          expose_to_workflow: true
+          system: false
+      parameters:
+        - name: organizationId
+          in: path
+          required: true
+          description: Your Herd organization ID, the last segment of the webhook URL in Herd Settings
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DetectionReport"
+      responses:
+        "200":
+          description: The alert was accepted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DetectionResult"
+        "401":
+          description: Missing or invalid webhook secret, or unknown organization
+        "429":
+          description: Rate limited
+        "500":
+          description: Processing failed; safe to retry when eventId is set
+components:
+  securitySchemes:
+    HerdWebhookSecret:
+      type: http
+      scheme: bearer
+      description: The webhook secret from Herd Settings > SIEM / DLP webhooks
+  schemas:
+    DetectionReport:
+      type: object
+      required: [alertType, userEmail, severity, description, source]
+      properties:
+        alertType:
+          type: string
+          maxLength: 255
+          description: The detection's name or rule; matched against your alert-to-training mappings
+          example: crowdstrike.sensor_tampering
+        userEmail:
+          type: string
+          format: email
+          maxLength: 320
+          example: jordan@example.com
+        severity:
+          type: string
+          enum: [low, medium, high, critical]
+        description:
+          type: string
+          maxLength: 2000
+          example: Endpoint sensor stopped by the signed-in user
+        source:
+          type: string
+          maxLength: 100
+          example: crowdstrike
+        eventId:
+          type: string
+          maxLength: 255
+          description: A stable id for the detection, so retries are ignored
+        eventType:
+          type: string
+          maxLength: 64
+          description: Optional Herd behaviour event type, for example edr_agent_tampered
+    DetectionResult:
+      type: object
+      properties:
+        success:
+          type: boolean
+        eventId:
+          type: string
+        status:
+          type: string
+        assignedTrainings:
+          type: integer
+        redeliveredTrainings:
+          type: integer
+        failedAssignments:
+          type: integer
+        userFound:
+          type: boolean
+        scored:
+          type: boolean
+        deduped:
+          type: boolean

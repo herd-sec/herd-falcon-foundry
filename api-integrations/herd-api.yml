@@ -1,0 +1,134 @@
+openapi: 3.0.0
+info:
+  title: Herd Security API
+  version: 1.0.0
+  description: |
+    Reads a person's Herd risk score and training status by email address.
+
+    Setup: in Herd, open Settings > API Keys, create a key with the `risk.read`
+    scope, and paste it into the API key field when you install this app. The
+    key's creator needs the AI governance, user and training view permissions in
+    Herd. Risk scores come back only for Herd plans that include risk scoring.
+servers:
+  - url: https://api.herdsecurity.io
+security:
+  - HerdApiKey: []
+paths:
+  /api/v1/users/lookup:
+    get:
+      operationId: lookupHerdUser
+      summary: Look up one user's risk score and training status
+      description: >-
+        Returns the user's latest risk score and band and their live training
+        assignments, found by email address in any letter case. Returns 404
+        when nobody in your Herd organization has the address.
+      x-cs-operation-config:
+        workflow:
+          name: Herd look up user
+          description: Get a person's Herd risk score, band and training status by email
+          expose_to_workflow: true
+          system: false
+      parameters:
+        - name: email
+          in: query
+          required: true
+          description: The user's email address
+          schema:
+            type: string
+            format: email
+            maxLength: 320
+      responses:
+        "200":
+          description: The user's risk score and training status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  data:
+                    $ref: "#/components/schemas/UserRiskLookup"
+        "400":
+          description: The email parameter is missing or not an email address
+        "401":
+          description: Missing or invalid API key
+        "403":
+          description: The key lacks the risk.read scope
+        "404":
+          description: No user in your Herd organization has this email address
+        "429":
+          description: Rate limited; honor the Retry-After header
+components:
+  securitySchemes:
+    HerdApiKey:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: A Herd API key with the risk.read scope (Settings > API Keys in Herd)
+  schemas:
+    UserRiskLookup:
+      type: object
+      properties:
+        user_id:
+          type: string
+          example: usr_cluser789xyz
+        email:
+          type: string
+          format: email
+          example: jane.smith@company.com
+        risk:
+          type: object
+          nullable: true
+          description: The latest risk snapshot, null when none exists or the plan has no risk scoring
+          properties:
+            score:
+              type: integer
+              description: 0 (lowest risk) to 100
+              example: 64
+            band:
+              type: string
+              enum: [LOW, MEDIUM, HIGH, CRITICAL]
+              example: HIGH
+            as_of:
+              type: string
+              format: date-time
+              example: "2026-03-02T00:00:00Z"
+        training:
+          type: object
+          description: Live training assignments, newest first, at most 200 listed
+          properties:
+            total:
+              type: integer
+              example: 2
+            passed:
+              type: integer
+              example: 1
+            in_progress:
+              type: integer
+              example: 0
+            not_started:
+              type: integer
+              example: 1
+            assignments:
+              type: array
+              items:
+                type: object
+                properties:
+                  training_id:
+                    type: string
+                    example: trn_clxyz123abc
+                  title:
+                    type: string
+                    example: Phishing basics
+                  status:
+                    type: string
+                    enum: [Passed, In Progress, Not started]
+                  enrollment_date:
+                    type: string
+                    format: date-time
+                  completion_date:
+                    type: string
+                    format: date-time
+                    nullable: true

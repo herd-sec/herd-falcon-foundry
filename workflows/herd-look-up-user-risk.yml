@@ -1,0 +1,27 @@
+name: Herd look up user risk
+description: Looks up a person's Herd risk score, band and training status by email and prints the result.
+trigger:
+  name: On demand
+  type: On demand
+  next: lookup_herd_user
+  parameters:
+    type: object
+    properties:
+      email:
+        type: string
+        description: Email address of the person to look up in Herd
+    required:
+      - email
+actions:
+  lookup_herd_user:
+    id: api_integrations.Herd look up user.lookupHerdUser
+    properties:
+      email: ${data['email']}
+    next:
+      - print_result
+  print_result:
+    id: aadbf530e35fc452a032f5f8acaaac2a
+    version_constraint: ~1
+    properties:
+      text_data: ${data['lookup_herd_user.API_Integration.Custom_Herd look up user.body']}
+output_fields: []
